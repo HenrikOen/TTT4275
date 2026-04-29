@@ -5,8 +5,8 @@ from sklearn.metrics import confusion_matrix
 np.set_printoptions(suppress=True)
 
 
-
-def load_and_split_data(split : int, num_flowers : int, inverted=False): #importing and splitting into training vs testing data (Data, Target, Names)
+#importing and splitting Iris data into training vs testing data (Data, Target, Names)
+def load_and_split_data(split : int, num_flowers : int, inverted=False): 
 
     #Loading data
     Iris        = load_iris()
@@ -23,6 +23,7 @@ def load_and_split_data(split : int, num_flowers : int, inverted=False): #import
     Training_Target = []
     Testing_Target = []
 
+    #split the data into trainig and target
     for start in range(0, len(Data), class_length):
         end = start + class_length
 
@@ -41,8 +42,8 @@ def load_and_split_data(split : int, num_flowers : int, inverted=False): #import
     return np.array(Training_Data), np.array(Testing_Data), np.array(Training_Target), np.array(Testing_Target), Names
 
 
-
-def Normalizing_Data(Training_Data : np.array, Testing_Data : np.array): #Normalizing the training data to have mu = 0, std = 1
+# Normalizing the training data to have mu = 0, std = 1
+def Normalizing_Data(Training_Data : np.array, Testing_Data : np.array): 
 
     mu  = Training_Data.mean(axis=0)
     std = Training_Data.std(axis=0)
@@ -52,15 +53,15 @@ def Normalizing_Data(Training_Data : np.array, Testing_Data : np.array): #Normal
     return Training_Data, Testing_Data
 
 
-
-def Adding_Bias_Component(Training_Data : np.array , Testing_Data : np.array): #Add bias component at the end of each datapoint: [x1,x2,...,1]
+#Add bias component at the end of each datapoint: [x1,x2,...,1]
+def Adding_Bias_Component(Training_Data : np.array , Testing_Data : np.array): 
     Training_Data  = np.hstack((Training_Data,    np.ones((len(Training_Data),   1))))
     Testing_Data   = np.hstack((Testing_Data,     np.ones((len(Testing_Data),    1))))
     return Training_Data, Testing_Data
 
 
-
-def one_hot_target(Training_Data : np.array, Training_Target : np.array, Training_Names : np.array): #Converting labels to one-hot target vectors
+#Converting labels to one-hot target vectors
+def one_hot_target(Training_Data : np.array, Training_Target : np.array, Training_Names : np.array): 
     T = np.zeros((len(Training_Names),Training_Data.shape[0]))
     T = T.T
     
@@ -68,7 +69,7 @@ def one_hot_target(Training_Data : np.array, Training_Target : np.array, Trainin
         T[n][Training_Target[n]] = 1
     return T
 
-
+#Performing Normalization, adding bias component and one-hot-target on the data
 def processing_Data(Training_Data, Testing_Data,
                     Training_Target,
                     Names):
@@ -79,8 +80,8 @@ def processing_Data(Training_Data, Testing_Data,
     return Training_Data, Testing_Data, T
 
 
-def Initialize_W(num_flowers, num_terms): #Initializing W : (flower_name, weight)
-
+ #Initializing W : (flower_name, weight)
+def Initialize_W(num_flowers, num_terms):
     rng = np.random.default_rng(0)
     W   = rng.random((num_flowers,num_terms))
     return W
@@ -90,7 +91,7 @@ def Initialize_W(num_flowers, num_terms): #Initializing W : (flower_name, weight
 def sigmoid(z):
     return 1/(1+np.e**(-z))
 
-
+#The main training loop of the model
 def training_Loop(Training_Data, W, T,
                     alpha       =0.1,
                     epsilon     =10**(-6),
@@ -113,7 +114,7 @@ def training_Loop(Training_Data, W, T,
     return MSE_log, W
 
 
-
+# Calculating confusion matrix and error rate
 def Confusion_matrix_error_rate(Testing_Data : np.array , Testing_Target : np.array, Names, W : np.array):
 
     Z = ( W @ Testing_Data.T).T
@@ -131,7 +132,7 @@ def Confusion_matrix_error_rate(Testing_Data : np.array , Testing_Target : np.ar
     return Confusion_Matrix, Erorr_rate
 
 
-
+#Plotting histogram of the feature for each of the flowers
 def plot_feature_histogram(Training_Data, Training_Target, Names):
     _, axes = plt.subplots(1, 4, figsize=(12, 3))
     for i, ax in enumerate(axes):
@@ -143,7 +144,7 @@ def plot_feature_histogram(Training_Data, Training_Target, Names):
     plt.show()
 
 
-
+#Plotting the MSE over each epoch
 def plot_MSE(MSE_logs, labels=None):
     for i, MSE_log in enumerate(MSE_logs):
         label = labels[i] if labels and i < len(labels) else None
@@ -156,7 +157,7 @@ def plot_MSE(MSE_logs, labels=None):
     plt.show()
 
 
-
+#Removing spesific features from the data
 def Cutting_Features(Training_Data, Testing_Data, *feature_nums, ):
     for feature in feature_nums:
         Training_Data   = np.delete(Training_Data, feature, axis=1)
@@ -164,7 +165,7 @@ def Cutting_Features(Training_Data, Testing_Data, *feature_nums, ):
     return Training_Data, Testing_Data
 
 
-
+#all in one function for performing the the loading, preparing and training of the model
 def run_experiment(Num_training=30, alpha = 0.01, num_flowers=3, Inverted=False, removed_features = 0, plotting_features=()):
     Training_Data, Testing_Data, Training_Target, Testing_Target, Names = load_and_split_data(Num_training, num_flowers, Inverted)
     if plotting_features:
@@ -176,10 +177,9 @@ def run_experiment(Num_training=30, alpha = 0.01, num_flowers=3, Inverted=False,
     MSE_log, W= training_Loop(Training_Data, W, T, alpha)
     confusion_matrix, error_rate = Confusion_matrix_error_rate(Testing_Data, Testing_Target, Names, W)
 
-    
-    # print(error_rate)
-    # print(confusion_matrix)
     return MSE_log, error_rate, confusion_matrix
+
+
 
 
 def main():

@@ -21,8 +21,8 @@ def load_files():
     return templatev, template_lab, num_train, testv, test_lab, num_test
 
 
-#Performing NN on data
-def NN(templatev, templatelab, testv, test_lab, GPU=True, K=1):
+#Performing KNN on data (K=1 => NN)
+def KNN(templatev, templatelab, testv, test_lab, GPU=True, K=1):
 
     start = time.time()
 
@@ -95,7 +95,7 @@ def Plot_number(testv, test_lab, predicted_lab, num_plots = (3,3)):
         plt.imshow(x, cmap="gray")
         plt.show()
 
-#Combining the load, NN and plotting into a single runnable function
+#Combining the load, KNN and plotting into a single runnable function
 def run_experiment(data_start=0, data_end=10000, GPU=True, num_plots =(0,0), num_runs=1, clustering=False, M=64, K=1):
 
     Total_time = 0
@@ -116,7 +116,7 @@ def run_experiment(data_start=0, data_end=10000, GPU=True, num_plots =(0,0), num
     for run in range(num_runs):
         
         start, end = data_start+steps*run, data_start+steps*(run+1)
-        Confusion_Matrix, Error_rate, predicted_lab, time_taken = NN(templatev, template_lab, testv[start:end], test_lab[start : end], GPU=GPU, K=K)
+        Confusion_Matrix, Error_rate, predicted_lab, time_taken = KNN(templatev, template_lab, testv[start:end], test_lab[start : end], GPU=GPU, K=K)
         Plot_number(testv[start:end], test_lab[start : end], predicted_lab, num_plots = num_plots)
 
         Total_Confusion_Matrix += Confusion_Matrix
@@ -160,7 +160,7 @@ def main():
     data_start = 0
     data_end = 1000
     num_correct_plots, num_wrong_plots = (0,0)
-    GPU = True #Note that this is only affects NN
+    GPU = True #Note that this is only affects KNN
     num_runs=1
 
     #Clustering parameters
