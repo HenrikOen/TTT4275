@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.datasets import load_iris
-from sklearn.metrics import confusion_matrix
+import seaborn as sns
 np.set_printoptions(suppress=True)
 
 
@@ -95,14 +95,14 @@ def sigmoid(z):
 def training_Loop(Training_Data, W, T,
                     alpha       =0.1,
                     epsilon     =10**(-6),
-                    upper_epoch_limit = 10**5):
+                    upper_epoch_limit = 2*10**4):
     
     MSE_old = np.inf
     MSE_log = []
     for n in range(upper_epoch_limit):
         Z = (W @ Training_Data.T).T
         G = sigmoid(Z)
-        MSE = 1/2*np.sum((G-T)**2)
+        MSE = 1/2*np.sum((G-T)**2)/(len(Training_Data))
         MSE_log.append(MSE)
         D = (G-T) * G * (1-G)
         grad_MSE = D.T@Training_Data
@@ -110,7 +110,6 @@ def training_Loop(Training_Data, W, T,
         if abs((MSE - MSE_old) / MSE_old) < epsilon:
             break
         MSE_old = MSE
-    print(n)
     return MSE_log, W
 
 
@@ -132,6 +131,44 @@ def Confusion_matrix_error_rate(Testing_Data : np.array , Testing_Target : np.ar
     return Confusion_Matrix, Erorr_rate
 
 
+# Plotting confusion matrix as a heatmap with annotations
+def plot_confusion_matrix(Confusion_Matrix, Names, title="Confusion Matrix"):
+    # Calculate percentages
+    total = np.sum(Confusion_Matrix)
+    percentages = Confusion_Matrix.astype(float) / total * 100
+    
+    # Create figure
+    plt.figure(figsize=(8, 6))
+    
+    # Create heatmap with custom colormap (green for diagonal, beige/gray for off-diagonal)
+    sns.heatmap(Confusion_Matrix, 
+                annot=False, 
+                fmt='d', 
+                cmap='RdYlGn',
+                cbar=False,
+                xticklabels=Names,
+                yticklabels=Names,
+                linewidths=1,
+                linecolor='white')
+    
+    # Add text annotations with counts and percentages
+    for i in range(len(Names)):
+        for j in range(len(Names)):
+            count = Confusion_Matrix[i, j]
+            percentage = percentages[i, j]
+            # Use white text for counts, red for percentages
+            plt.text(j + 0.5, i + 0.35, str(count), 
+                    ha='center', va='center', color='white', fontweight='bold', fontsize=12)
+            plt.text(j + 0.5, i + 0.65, f'{percentage:.2f}%', 
+                    ha='center', va='center', color='white', fontsize=10)
+    
+    plt.xlabel('Predicted', fontsize=12)
+    plt.ylabel('Actual', fontsize=12)
+    plt.title(title, fontsize=14)
+    plt.tight_layout()
+    plt.show()
+
+
 #Plotting histogram of the feature for each of the flowers
 def plot_feature_histogram(Training_Data, Training_Target, Names):
     _, axes = plt.subplots(1, 4, figsize=(12, 3))
@@ -151,7 +188,7 @@ def plot_MSE(MSE_logs, labels=None):
         plt.plot(MSE_log, label=label)
     plt.xlabel("Epoch")
     plt.ylabel("MSE")
-    plt.yscale("log")
+    # plt.yscale("log")
     if labels:
         plt.legend()
     plt.show()
@@ -187,9 +224,9 @@ def main():
     #1e: Inveted = (False, True)
     #2c: removed_features = (0,1,2)
 
-    alpha            = (0.05,)
-    Inverted         = (False, )
-    removed_features = (0,1,2)
+    alpha            = (0.1, )
+    Inverted         = (False, True)
+    removed_features = (0,)
 
     MSE_log_log           = []
     confusion_matrix_log  = []
@@ -204,11 +241,12 @@ def main():
                 error_rate_log.append(error_rate)
                 label = f"alpha={a}, Inverted={I}, removed_features={r}"
                 labels.append(label)
-                print(label)
-                print(error_rate)
-                print(confusion_matrix)
+                print("Properties:", label)
+                print("Error rate: ", error_rate)
+                print("Confusion Matrix:\n", confusion_matrix)
+                plot_confusion_matrix(confusion_matrix, ["a","b","c"], title="Confusion Matrix - Test Set")
 
-    plot_MSE(MSE_log_log, labels=labels)
+    # plot_MSE(MSE_log_log, labels=labels)
     
 
     
