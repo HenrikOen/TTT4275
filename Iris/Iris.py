@@ -137,30 +137,79 @@ def plot_confusion_matrix(Confusion_Matrix, Names, title="Confusion Matrix"):
     total = np.sum(Confusion_Matrix)
     percentages = Confusion_Matrix.astype(float) / total * 100
     
+    # Create extended matrix with totals
+    n = len(Names)
+    extended_matrix = np.zeros((n + 1, n + 1))
+    extended_matrix[:n, :n] = Confusion_Matrix
+    extended_matrix[:n, n] = np.sum(Confusion_Matrix, axis=1)
+    extended_matrix[n, :n] = np.sum(Confusion_Matrix, axis=0)
+    extended_matrix[n, n] = total
+    
+    # Create color mask
+    colors = np.zeros((n + 1, n + 1))
+    colors[:n, :n] = 1
+    colors[:n, n] = 0.3
+    colors[n, :n] = 0.3
+    colors[n, n] = 0.3
+    
     # Create figure
     plt.figure(figsize=(8, 6))
     
-    # Create heatmap with custom colormap (green for diagonal, beige/gray for off-diagonal)
-    sns.heatmap(Confusion_Matrix, 
+    # Create heatmap
+    sns.heatmap(extended_matrix, 
                 annot=False, 
                 fmt='d', 
                 cmap='RdYlGn',
                 cbar=False,
-                xticklabels=Names,
-                yticklabels=Names,
+                xticklabels=list(Names) + ['sum_col'],
+                yticklabels=list(Names) + ['sum_lin'],
                 linewidths=1,
-                linecolor='white')
+                linecolor='white',
+                vmin=0,
+                vmax=np.max(Confusion_Matrix) if np.max(Confusion_Matrix) > 0 else 1)
     
     # Add text annotations with counts and percentages
-    for i in range(len(Names)):
-        for j in range(len(Names)):
+    for i in range(n):
+        for j in range(n):
             count = Confusion_Matrix[i, j]
             percentage = percentages[i, j]
-            # Use white text for counts, red for percentages
             plt.text(j + 0.5, i + 0.35, str(count), 
                     ha='center', va='center', color='white', fontweight='bold', fontsize=12)
             plt.text(j + 0.5, i + 0.65, f'{percentage:.2f}%', 
                     ha='center', va='center', color='white', fontsize=10)
+    
+    # Add row false negative rate
+    for i in range(n):
+        row_total = np.sum(Confusion_Matrix[i, :])
+        tp = Confusion_Matrix[i, i]
+        fn = row_total - tp
+        tp_rate = (tp / row_total * 100) if row_total > 0 else 0
+        fn_rate = (fn / row_total * 100) if row_total > 0 else 0
+        plt.text(n + 0.5, i + 0.35, f'{tp_rate:.2f}%', 
+                ha='center', va='center', color='white', fontweight='bold', fontsize=10)
+        plt.text(n + 0.5, i + 0.65, f'{fn_rate:.2f}%', 
+                ha='center', va='center', color='red', fontsize=9)
+    
+    # Add column false positive rate
+    for j in range(n):
+        col_total = np.sum(Confusion_Matrix[:, j])
+        tp = Confusion_Matrix[j, j]
+        fp = col_total - tp
+        tp_rate = (tp / col_total * 100) if col_total > 0 else 0
+        fp_rate = (fp / col_total * 100) if col_total > 0 else 0
+        plt.text(j + 0.5, n + 0.35, f'{tp_rate:.2f}%', 
+                ha='center', va='center', color='white', fontweight='bold', fontsize=10)
+        plt.text(j + 0.5, n + 0.65, f'{fp_rate:.2f}%', 
+                ha='center', va='center', color='red', fontsize=9)
+    
+    # Add total error rate
+    total_errors = total - np.trace(Confusion_Matrix)
+    correct_rate = ((total - total_errors) / total * 100) if total > 0 else 0
+    error_rate = (total_errors / total * 100) if total > 0 else 0
+    plt.text(n + 0.5, n + 0.35, f'{correct_rate:.2f}%', 
+            ha='center', va='center', color='white', fontweight='bold', fontsize=10)
+    plt.text(n + 0.5, n + 0.65, f'{error_rate:.2f}%', 
+            ha='center', va='center', color='red', fontsize=9)
     
     plt.xlabel('Predicted', fontsize=12)
     plt.ylabel('Actual', fontsize=12)
@@ -170,12 +219,20 @@ def plot_confusion_matrix(Confusion_Matrix, Names, title="Confusion Matrix"):
 
 
 #Plotting histogram of the feature for each of the flowers
-def plot_feature_histogram(Training_Data, Training_Target, Names):
-    _, axes = plt.subplots(1, 4, figsize=(12, 3))
+def plot_feature_histogram(Training_Data, Training_Target, Testing_Data, Testing_Target, Names):
+    Data = np.vstack((Training_Data, Testing_Data))
+    Target = np.hstack((Training_Target, Testing_Target))
+    feature_names = ["sepal length", "sepal width", "petal length", "petal width"]
+    _, axes = plt.subplots(2, 2, figsize=(12, 8))
+    axes = axes.flatten()
     for i, ax in enumerate(axes):
+        bins = np.linspace(0, 8, 80)
         for cls in range(len(Names)):
-            ax.hist(Training_Data[Training_Target == cls, i], alpha=0.6, label=Names[cls])
-        ax.set_title(f"Feature {i+1}")
+            ax.hist(Data[Target == cls, i], bins=bins, alpha=0.6, label=Names[cls], edgecolor='black')
+        ax.set_title(feature_names[i])
+        ax.set_xlabel("cm")
+        ax.set_ylabel("count")
+        ax.set_xlim(0, 8)
     axes[0].legend()
     plt.tight_layout()
     plt.show()
@@ -196,6 +253,7 @@ def plot_MSE(MSE_logs, labels=None):
 
 #Removing spesific features from the data
 def Cutting_Features(Training_Data, Testing_Data, *feature_nums, ):
+    feature_nums = sorted(feature_nums, reverse=True)
     for feature in feature_nums:
         Training_Data   = np.delete(Training_Data, feature, axis=1)
         Testing_Data    = np.delete(Testing_Data,  feature, axis=1)
@@ -203,18 +261,23 @@ def Cutting_Features(Training_Data, Testing_Data, *feature_nums, ):
 
 
 #all in one function for performing the the loading, preparing and training of the model
-def run_experiment(Num_training=30, alpha = 0.01, num_flowers=3, Inverted=False, removed_features = 0, plotting_features=()):
+def run_experiment(Num_training=30, alpha = 0.01, num_flowers=3, Inverted=False, removed_features = 0, plotting_features=False):
+    feature_priority = [1, 0, 3, 2]
+    features_to_remove = tuple(feature_priority[:removed_features])
+    
     Training_Data, Testing_Data, Training_Target, Testing_Target, Names = load_and_split_data(Num_training, num_flowers, Inverted)
     if plotting_features:
-        plot_feature_histogram(Training_Data, Training_Target, Names)
-
-    Training_Data, Testing_Data = Cutting_Features(Training_Data, Testing_Data, removed_features)
+        plot_feature_histogram(Training_Data, Training_Target, Testing_Data, Testing_Target, Names)
+    print("before:", Training_Data.shape)
+    Training_Data, Testing_Data = Cutting_Features(Training_Data, Testing_Data, *features_to_remove)
+    print("after:", Training_Data.shape)
     Training_Data, Testing_Data, T = processing_Data(Training_Data, Testing_Data, Training_Target, Names)
     W = Initialize_W(len(Names),Training_Data.shape[1])
     MSE_log, W= training_Loop(Training_Data, W, T, alpha)
+    confusion_matrix_train, error_rate_train = Confusion_matrix_error_rate(Training_Data, Training_Target, Names, W)
     confusion_matrix, error_rate = Confusion_matrix_error_rate(Testing_Data, Testing_Target, Names, W)
 
-    return MSE_log, error_rate, confusion_matrix
+    return MSE_log, error_rate, confusion_matrix, error_rate_train, confusion_matrix_train, Names
 
 
 
@@ -225,8 +288,10 @@ def main():
     #2c: removed_features = (0,1,2)
 
     alpha            = (0.1, )
-    Inverted         = (False, True)
-    removed_features = (0,)
+    Inverted         = (False, )
+    removed_features = (0, 1, 2, 3)
+
+    plotting_features = False
 
     MSE_log_log           = []
     confusion_matrix_log  = []
@@ -235,16 +300,19 @@ def main():
     for a in alpha:
         for I in Inverted:
             for r in removed_features:
-                MSE_log, error_rate, confusion_matrix = run_experiment(alpha=a, Inverted=I, removed_features=r)
+                MSE_log, error_rate, confusion_matrix, error_rate_train, confusion_matrix_train, Names = run_experiment(alpha=a, Inverted=I, removed_features=r, plotting_features = plotting_features)
                 MSE_log_log.append(MSE_log)
                 confusion_matrix_log.append(confusion_matrix)
                 error_rate_log.append(error_rate)
                 label = f"alpha={a}, Inverted={I}, removed_features={r}"
                 labels.append(label)
                 print("Properties:", label)
-                print("Error rate: ", error_rate)
-                print("Confusion Matrix:\n", confusion_matrix)
-                plot_confusion_matrix(confusion_matrix, ["a","b","c"], title="Confusion Matrix - Test Set")
+                print("Error rate (test): ", error_rate)
+                print("Confusion Matrix (test):\n", confusion_matrix)
+                # plot_confusion_matrix(confusion_matrix, Names, title="Confusion Matrix - Test Set")
+                print("Train Error rate (training): ", error_rate_train)
+                print("Train Confusion Matrix (training):\n", confusion_matrix_train)
+                # plot_confusion_matrix(confusion_matrix_train, Names, title="Confusion Matrix - Training Set")
 
     # plot_MSE(MSE_log_log, labels=labels)
     
