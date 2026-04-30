@@ -72,27 +72,60 @@ def KNN(templatev, templatelab, testv, test_lab, GPU=True, K=1):
 
 
 #Plotting random batch of wrong and correct predictions
-def Plot_number(testv, test_lab, predicted_lab, num_plots = (3,3)):
+def Plot_number(testv, test_lab, predicted_lab, num_plots = (9,9)):
 
     rng = np.random.default_rng(seed=42)
+    
+    # Plot wrong predictions
     wrong_idx = np.where(test_lab != predicted_lab)[0]
     random_wrong_idx = rng.choice(wrong_idx, size=min(num_plots[1], len(wrong_idx)), replace=False)
-
-
-    for n in random_wrong_idx:
-        x = testv[n, :].reshape((28, 28))
-        plt.title(f"Correct Number: {test_lab[n]} \nPredicted Number: {predicted_lab[n]}")
-        plt.imshow(x, cmap="gray")
+    
+    # Plot in batches of 9 (3x3 grids)
+    for batch_start in range(0, len(random_wrong_idx), 9):
+        batch_end = min(batch_start + 9, len(random_wrong_idx))
+        batch_indices = random_wrong_idx[batch_start:batch_end]
+        
+        fig, axes = plt.subplots(3, 3, figsize=(10, 10))
+        axes = axes.flatten()
+        
+        for i, n in enumerate(batch_indices):
+            x = testv[n, :].reshape((28, 28))
+            axes[i].imshow(x, cmap="gray")
+            axes[i].set_title(f"Correct: {test_lab[n]} | Predicted: {predicted_lab[n]}")
+            axes[i].axis('off')
+        
+        # Turn off unused axes
+        for i in range(len(batch_indices), 9):
+            axes[i].axis('off')
+        
+        plt.suptitle("Wrong Predictions", fontsize=14)
+        plt.tight_layout()
         plt.show()
     
+    # Plot correct predictions
     correct_idx = np.where(test_lab == predicted_lab)[0]
-    random_correct_idx = rng.choice(correct_idx, size=min(num_plots[1], len(correct_idx)), replace=False)
-
-
-    for n in random_correct_idx:
-        x = testv[n, :].reshape((28, 28))
-        plt.title(f"Correct Number: {test_lab[n]} \nPredicted Number: {predicted_lab[n]}")
-        plt.imshow(x, cmap="gray")
+    random_correct_idx = rng.choice(correct_idx, size=min(num_plots[0], len(correct_idx)), replace=False)
+    
+    # Plot in batches of 9 (3x3 grids)
+    for batch_start in range(0, len(random_correct_idx), 9):
+        batch_end = min(batch_start + 9, len(random_correct_idx))
+        batch_indices = random_correct_idx[batch_start:batch_end]
+        
+        fig, axes = plt.subplots(3, 3, figsize=(10, 10))
+        axes = axes.flatten()
+        
+        for i, n in enumerate(batch_indices):
+            x = testv[n, :].reshape((28, 28))
+            axes[i].imshow(x, cmap="gray")
+            axes[i].set_title(f"Correct: {test_lab[n]} | Predicted: {predicted_lab[n]}")
+            axes[i].axis('off')
+        
+        # Turn off unused axes
+        for i in range(len(batch_indices), 9):
+            axes[i].axis('off')
+        
+        plt.suptitle("Correct Predictions", fontsize=14)
+        plt.tight_layout()
         plt.show()
 
 #Combining the load, KNN and plotting into a single runnable function
@@ -158,8 +191,8 @@ def main():
     
     ##Default parameters
     data_start = 0
-    data_end = 1000
-    num_correct_plots, num_wrong_plots = (0,0)
+    data_end = 100
+    num_correct_plots, num_wrong_plots = (10,0)
     GPU = True #Note that this is only affects KNN
     num_runs=1
 
