@@ -265,22 +265,22 @@ def main():
     if Run_Typical_Examples:
 
         print("---------------------------------------")
+        print("K=1, M=1")
         Confusion_Matrix, Error_rate, time_taken = run_experiment(0, data_length, GPU, (9, 9), num_runs=1, M=1, K=1, show_K_closest_samples=0, show_difference=3)
-        print("K=",K,"M=",M)
         print("Total Time:        ", time_taken, "seconds")
         print("Error_rate: ", Error_rate)
         print(Confusion_Matrix)
 
         print("---------------------------------------")
+        print("K=1, M=64")
         Confusion_Matrix, Error_rate, time_taken = run_experiment(0, data_length, GPU, (0, 0), num_runs=1 , M=64,K=1, show_K_closest_samples=0, show_difference=0)
-        print("K=",K,"M=",M)
         print("Total Time:        ", time_taken, "seconds")
         print("Error_rate: ", Error_rate)
         print(Confusion_Matrix) 
 
         print("---------------------------------------")
+        print("K=7, M=64")
         Confusion_Matrix, Error_rate, time_taken = run_experiment(0, data_length, GPU, (0, 0), num_runs=1 , M=64,K=7, show_K_closest_samples=3,  show_difference=0)
-        print("K=",K,"M=",M)
         print("Total Time:        ", time_taken, "seconds")
         print("Error_rate: ", Error_rate)
         print(Confusion_Matrix)

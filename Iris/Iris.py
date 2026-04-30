@@ -217,9 +217,6 @@ def run_experiment(Num_training=30, alpha = 0.01, num_flowers=3, Inverted=False,
 
 def main():
 
-    #1e: Inveted = (False, True)
-    #2c: removed_features = (0,1,2)
-
     #--------------------------Changeable parameters-----------------------------
     
     #Change in features:
